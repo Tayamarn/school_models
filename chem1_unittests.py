@@ -1,9 +1,9 @@
 import unittest
 
-import Chem1
+import chem1
 
 
-class MockPeroxide(Chem1.Peroxide):
+class MockPeroxide(chem1.Peroxide):
     @staticmethod
     def _random_impurity_factor():
         return 0.01
@@ -24,7 +24,7 @@ class CheckPeroxide(unittest.TestCase):
 
     def test_random_impurity(self):
         for _ in xrange(1000):
-            f = Chem1.Peroxide._random_impurity_factor()
+            f = chem1.Peroxide._random_impurity_factor()
             ok_factors = [0.01, 0.02, 0.03, 0.04, 0.05,
                           0.06, 0.07, 0.08, 0.09, 0.1]
             self.assertIn(f, ok_factors)
