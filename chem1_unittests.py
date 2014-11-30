@@ -39,5 +39,53 @@ class CheckPeroxide(unittest.TestCase):
             self.test_peroxide._specific_oxygen_allocation_volume(25), 24.75)
 
 
+class MockML(object):
+    def check_model(self, model):
+        pass
+
+    def check_input_params(self, model, input_params):
+        pass
+
+    def check_model_params(self, model, model_params):
+        pass
+
+    def check_components(self, model, components):
+        pass
+
+    def check_interm_params(self, model, interm_params, hidden_params):
+        pass
+
+
+class CheckOxygenRegeneration(unittest.TestCase):
+    def setUp(self):
+        mock_ml = MockML()
+        self.regenerator = chem1.OxygenRegeneration(
+            mock_ml, 'foo', 'logger', 'out')
+
+    def test_init(self):
+        self.assertEqual(len(self.regenerator.peroxides), 3)
+        peroxide_names = [p.name for p in self.regenerator.peroxides]
+        for peroxide in chem1.PEROXIDES:
+            self.assertIn(peroxide['name'], peroxide_names)
+
+    def test_chosen_peroxide(self):
+        name = 'KO2'
+        peroxide = self.regenerator.chosen_peroxide(name)
+        self.assertEqual(peroxide.name, name)
+
+    def test_check_peroxide(self):
+        name = 'NaO2'
+
+        # mock_input_params = {'n': 2, 't': 10}
+        # mock_model_params = {
+        #     'peroxide_name': 'KO2',
+        #     'carbon_dioxide_absorption': 160,
+        #     'oxygen_allocation': 200,
+        #     'electricity_ammount': 17232000}
+        # print(self.regenerator.team_arguments(mock_input_params))
+        # print(self.regenerator.pre_production(
+        #     mock_input_params, mock_model_params, {}))
+
+
 if __name__ == '__main__':
     unittest.main()
