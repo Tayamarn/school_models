@@ -3,10 +3,13 @@ from abstractmodel import AbstractModel
 
 OXIDIZERS = ('oxygen', 'nitric oxide')
 FUELS = ('hydrazine', 'DMH', 'hydrogen', 'ammonia', 'methane', 'kerosene')
+RATE_AND_RADICALS = (
+    (0.2349, 0.56), (0.4355, 0.7), (0.1284, 0.45), (0.0683, 0.325),
+    (0.3646, 0.65), (0.2522, 0.6), (0.1457, 0.47), (0.5686, 0.75))
 
 
 class BlendedFuel(object):
-    def __init__(self, oxidizer, fuel, ):
+    def __init__(self, oxidizer, fuel, rate_constant, radicals_amount):
         pass
 
 
