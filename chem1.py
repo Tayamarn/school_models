@@ -1,6 +1,7 @@
 import random
 
 from abstractmodel import AbstractModel
+import utils
 
 
 PEROXIDES = [{'name': 'KO2', 'q1': 157.75, 'q2': 80.55, 'q3': 236.62},
@@ -9,10 +10,6 @@ PEROXIDES = [{'name': 'KO2', 'q1': 157.75, 'q2': 80.55, 'q3': 236.62},
 
 PEROXIDE_TO_QUALITY = {0: 25, 1: 15, 2: 10}
 DIFFERENCE_TO_QUALITY = [(5, 25), (10, 20), (20, 15), (25, 10), (50, 5)]
-
-
-def percentage_difference(original, copy):
-    return 100.0 * abs(original - copy) / original
 
 
 class Peroxide(object):
@@ -52,14 +49,6 @@ class OxygenRegeneration(AbstractModel):
         return PEROXIDE_TO_QUALITY[sorted_peroxide_names.index(peroxide_name)]
 
     @staticmethod
-    def quality_by_precision(original, copy):
-        difference = percentage_difference(original, copy)
-        for max_diff, qual in DIFFERENCE_TO_QUALITY:
-            if difference < max_diff:
-                return qual
-        return 0
-
-    @staticmethod
     def electricity_needed(oxygen_volume):
         return 17232 * oxygen_volume
 
@@ -68,17 +57,20 @@ class OxygenRegeneration(AbstractModel):
         return 50 * men_count * time_hours
 
     def check_carbon_dioxide_absorption(self, the_peroxide, absorption_volume):
-        return self.quality_by_precision(
+        return utils.quality_by_precision(
             the_peroxide.specific_carbon_dioxide_absorption_volume,
-            absorption_volume)
+            absorption_volume,
+            DIFFERENCE_TO_QUALITY)
 
     def check_oxygen_allocation(self, the_peroxide, allocation_volume):
-        return self.quality_by_precision(
+        return utils.quality_by_precision(
             the_peroxide.specific_oxygen_allocation_volume,
-            allocation_volume)
+            allocation_volume,
+            DIFFERENCE_TO_QUALITY)
 
     def check_electricity_amount(self, computed_amount, player_amount):
-        return self.quality_by_precision(computed_amount, player_amount)
+        return utils.quality_by_precision(
+            computed_amount, player_amount, DIFFERENCE_TO_QUALITY)
 
     def team_arguments(self, input_params):
         AbstractModel.team_arguments(self, input_params)

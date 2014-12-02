@@ -1,6 +1,7 @@
 import random
 
 from abstractmodel import AbstractModel
+import utils
 
 # For reference
 # OXIDIZERS = ('oxygen', 'nitric oxide')
@@ -14,10 +15,6 @@ FUEL_RECIPES = (
 RATE_AND_RADICALS = (
     (0.2349, 0.56), (0.4355, 0.7), (0.1284, 0.45), (0.0683, 0.325),
     (0.3646, 0.65), (0.2522, 0.6), (0.1457, 0.47), (0.5686, 0.75))
-
-
-def percentage_difference(original, copy):
-    return 100.0 * abs(original - copy) / original
 
 
 class BlendedFuel(object):
@@ -44,22 +41,14 @@ class RocketFuel(AbstractModel):
         return filter(lambda f: f.oxidizer == oxidizer and f.fuel == fuel,
                       self.fuel_types)[0]
 
-    @staticmethod
-    def quality_by_precision(original, copy, quality_dict):
-        difference = percentage_difference(original, copy)
-        for max_diff, qual in quality_dict:
-            if difference < max_diff:
-                return qual
-        return 0
-
     def check_heat(self, the_blend, heat):
         QUALITY = [(5, 40), (10, 30), (20, 15)]
-        return self.quality_by_precision(
+        return utils.quality_by_precision(
             the_blend.combustion_heat, heat, QUALITY)
 
     def check_radicals(self, the_blend, radicals):
         QUALITY = [(5, 30), (10, 25), (20, 20), (25, 15), (50, 5)]
-        return self.quality_by_precision(
+        return utils.quality_by_precision(
             the_blend.radicals_amount, radicals, QUALITY)
 
     def team_arguments(self, input_params):
