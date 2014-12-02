@@ -51,6 +51,14 @@ class RocketFuel(AbstractModel):
         return utils.quality_by_precision(
             the_blend.radicals_amount, radicals, QUALITY)
 
+    def validate_model_params(self, model_params):
+        return {
+            'oxidizer': model_params['oxidizer'],
+            'fuel': model_params['fuel'],
+            'combustion_heat': utils.to_float(model_params['combustion_heat']),
+            'radicals_amount': utils.to_float(model_params['radicals_amount'])
+        }
+
     def team_arguments(self, input_params):
         return {(f.oxidizer, f.fuel): f.rate_constant for f in self.fuel_types}
 
@@ -66,12 +74,15 @@ class RocketFuel(AbstractModel):
             self, input_params, model_params, components)
         assert (model_params['oxidizer'], model_params['fuel']) in FUEL_RECIPES
 
+        clean_model_params = self.validate_model_params(model_params)
+
         the_blend = self.chosen_blend(
-            model_params['oxidizer'], model_params['fuel'])
+            clean_model_params['oxidizer'], clean_model_params['fuel'])
         quality = the_blend.quality
-        quality += self.check_heat(the_blend, model_params['combustion_heat'])
+        quality += self.check_heat(
+            the_blend, clean_model_params['combustion_heat'])
         quality += self.check_radicals(
-            the_blend, model_params['radicals_amount'])
+            the_blend, clean_model_params['radicals_amount'])
         interm_params = ({'quality': quality},
                          {'quality': quality})
         self.ml.check_interm_params(self.model, *interm_params)
