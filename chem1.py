@@ -84,8 +84,8 @@ class OxygenRegeneration(AbstractModel):
     def pre_production(self, input_params, model_params, components):
         '''
             input_params:
-                n - number of people in the spaceship
-                t - spaceship lifetime, hours
+                n - number of people in the platform
+                t - platform lifetime, hours
             model_params:
                 peroxide_name - name of the chosen peroxide
                 carbon_dioxide_absorption - specific carbon dioxide absorption
