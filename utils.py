@@ -5,6 +5,14 @@ Comments are welcome at max@goldenforests.ru
 """
 
 
+class ModelError(Exception):
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
+
+
 def percentage_difference(original, copy):
     return 100.0 * abs(original - copy) / original
 
@@ -20,3 +28,21 @@ def quality_by_precision(original, copy, diff_to_quality):
         if difference < max_difference:
             return quality
     return 0
+
+
+def to_int(param):
+    try:
+        return int(round(to_float(param)))
+    except ValueError:
+        raise ModelError("Can't cast {param} to int!".format(param=param))
+
+
+def to_float(param):
+    if not param:
+        return 0.0
+    s = str(param)  # Just in case
+    s = s.replace(',', '.')
+    try:
+        return float(s)
+    except ValueError:
+        raise ModelError("Can't cast {param} to float!".format(param=param))
