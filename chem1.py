@@ -72,12 +72,30 @@ class OxygenRegeneration(AbstractModel):
         return utils.quality_by_precision(
             computed_amount, player_amount, DIFFERENCE_TO_QUALITY)
 
+    def validate_input_params(self, input_params):
+        return {
+            'n': utils.to_int(input_params['n']),
+            't': utils.to_float(input_params['t'])
+        }
+
+    def validate_model_params(self, model_params):
+        return {
+            'peroxide_name': model_params['peroxide_name'],
+            'carbon_dioxide_absorption': utils.to_float(
+                model_params['carbon_dioxide_absorption']),
+            'oxygen_allocation': utils.to_float(
+                model_params['oxygen_allocation']),
+            'electricity_amount': utils.to_float(
+                model_params['electricity_amount'])
+        }
+
     def team_arguments(self, input_params):
         AbstractModel.team_arguments(self, input_params)
+        clean_input_params = self.validate_input_params(input_params)
         peroxide_impurities = {p.name: p.impurity_factor
                                for p in self.peroxides}
         oxygen_volume_required = self.oxygen_volume(
-            input_params['n'], input_params['t'])
+            clean_input_params['n'], clean_input_params['t'])
         return {'peroxide_impurities': peroxide_impurities,
                 'oxygen_volume_required': oxygen_volume_required}
 
@@ -92,7 +110,7 @@ class OxygenRegeneration(AbstractModel):
                         volume for the chosen peroxide
                 oxygen_allocation - specific oxygen allocation volume for
                         the chosen peroxide
-                electricity_ammount - amount of electricity needed to get the
+                electricity_amount - amount of electricity needed to get the
                         required oxygen by electrolysis
             components:
         '''
@@ -100,17 +118,22 @@ class OxygenRegeneration(AbstractModel):
             self, input_params, model_params, components)
         assert (model_params['peroxide_name'] in
                 [p.name for p in self.peroxides])
-        the_peroxide = self.chosen_peroxide(model_params['peroxide_name'])
+
+        clean_input_params = self.validate_input_params(input_params)
+        clean_model_params = self.validate_model_params(model_params)
+
+        the_peroxide = self.chosen_peroxide(
+            clean_model_params['peroxide_name'])
         oxygen_volume_required = self.oxygen_volume(
-            input_params['n'], input_params['t'])
-        quality = self.check_peroxide(model_params['peroxide_name'])
+            clean_input_params['n'], clean_input_params['t'])
+        quality = self.check_peroxide(clean_model_params['peroxide_name'])
         quality += self.check_carbon_dioxide_absorption(
-            the_peroxide, model_params['carbon_dioxide_absorption'])
+            the_peroxide, clean_model_params['carbon_dioxide_absorption'])
         quality += self.check_oxygen_allocation(
-            the_peroxide, model_params['oxygen_allocation'])
+            the_peroxide, clean_model_params['oxygen_allocation'])
         quality += self.check_electricity_amount(
             self.electricity_needed(oxygen_volume_required),
-            model_params['electricity_ammount'])
+            clean_model_params['electricity_amount'])
 
         interm_params = (
             {'quality': quality},
