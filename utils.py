@@ -3,14 +3,17 @@ Utilities for my models. You can use them too!
 
 Comments are welcome at max@goldenforests.ru
 """
+import random
+
+from errors import ModelError
 
 
-class ModelError(Exception):
-    def __init__(self, value):
-        self.value = value
+# class ModelError(Exception):
+#     def __init__(self, value):
+#         self.value = value
 
-    def __str__(self):
-        return repr(self.value)
+#     def __str__(self):
+#         return repr(self.value)
 
 
 def percentage_difference(original, copy):
@@ -34,7 +37,9 @@ def to_int(param):
     try:
         return int(round(to_float(param)))
     except ValueError:
-        raise ModelError("Can't cast {param} to int!".format(param=param))
+        raise ModelError(
+            "Не могу преобразовать {param} в целоое число.".format(
+                param=param))
 
 
 def to_float(param):
@@ -45,4 +50,14 @@ def to_float(param):
     try:
         return float(s)
     except ValueError:
-        raise ModelError("Can't cast {param} to float!".format(param=param))
+        raise ModelError(
+            "Не могу преобразовать {param} в число.".format(
+                param=param))
+
+
+def percentage_frame(val, min_perc=5, max_perc=15):
+    left_border = (1 - random.randint(
+        int(min_perc * 100), int(max_perc * 100)) / 10000.) * val
+    right_border = (1 + random.randint(
+        int(min_perc * 100), int(max_perc * 100)) / 10000.) * val
+    return '{l} - {r}'.format(l=left_border, r=right_border)

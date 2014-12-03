@@ -76,15 +76,15 @@ class CheckOxygenRegeneration(unittest.TestCase):
     def test_check_peroxide(self):
         name = 'NaO2'
 
-        # mock_input_params = {'n': 2, 't': 10}
-        # mock_model_params = {
-        #     'peroxide_name': 'KO2',
-        #     'carbon_dioxide_absorption': 160,
-        #     'oxygen_allocation': 200,
-        #     'electricity_ammount': 17232000}
-        # print(self.regenerator.team_arguments(mock_input_params))
-        # print(self.regenerator.pre_production(
-        #     mock_input_params, mock_model_params, {}))
+        mock_input_params = {'n': 2, 't': 10}
+        mock_model_params = {
+            'peroxide_name': 'KO2',
+            'carbon_dioxide_absorption': 160,
+            'oxygen_allocation': 200,
+            'electricity_amount': 17232}
+        print(self.regenerator.team_arguments(mock_input_params))
+        print(self.regenerator.pre_production(
+            mock_input_params, mock_model_params, {}))
 
 
 if __name__ == '__main__':

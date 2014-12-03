@@ -1,6 +1,7 @@
 import random
 
 from abstractmodel import AbstractModel
+from errors import ModelError
 import utils
 
 
@@ -33,6 +34,8 @@ class Peroxide(object):
 
 
 class OxygenRegeneration(AbstractModel):
+    ELECTRICITY_NEEDED = 17232
+
     def __init__(self, ml, team, logger, output):
         AbstractModel.__init__(self, ml, self.__class__.__name__,
                                team, logger, output)
@@ -47,10 +50,6 @@ class OxygenRegeneration(AbstractModel):
             key=lambda p: p.specific_oxygen_allocation_volume,
             reverse=True)]
         return PEROXIDE_TO_QUALITY[sorted_peroxide_names.index(peroxide_name)]
-
-    @staticmethod
-    def electricity_needed(oxygen_volume):
-        return 17232 * oxygen_volume
 
     @staticmethod
     def oxygen_volume(men_count, time_hours):
@@ -79,6 +78,22 @@ class OxygenRegeneration(AbstractModel):
         }
 
     def validate_model_params(self, model_params):
+        if utils.to_float(
+                model_params['carbon_dioxide_absorption']) < 0:
+            raise ModelError(
+                "Рассчетное значение удельного поглощения углекислого газа"
+                " не может быть ниже 0.")
+        if utils.to_float(
+                model_params['oxygen_allocation']) < 0:
+            raise ModelError(
+                "Рассчетное значение удельного выделения кислорода"
+                " не может быть ниже 0.")
+        if utils.to_float(
+                model_params['electricity_amount']) < 0:
+            raise ModelError(
+                "Рассчетное значение необходимой электроэнергии"
+                " не может быть ниже 0.")
+
         return {
             'peroxide_name': model_params['peroxide_name'],
             'carbon_dioxide_absorption': utils.to_float(
@@ -116,15 +131,13 @@ class OxygenRegeneration(AbstractModel):
         '''
         AbstractModel.pre_production(
             self, input_params, model_params, components)
-        assert (model_params['peroxide_name'] in
-                [p.name for p in self.peroxides])
 
         clean_input_params = self.validate_input_params(input_params)
         clean_model_params = self.validate_model_params(model_params)
 
         the_peroxide = self.chosen_peroxide(
             clean_model_params['peroxide_name'])
-        oxygen_volume_required = self.oxygen_volume(
+        oxygen_volume_required = self.oxygen_volume(  # noqa
             clean_input_params['n'], clean_input_params['t'])
         quality = self.check_peroxide(clean_model_params['peroxide_name'])
         quality += self.check_carbon_dioxide_absorption(
@@ -132,14 +145,23 @@ class OxygenRegeneration(AbstractModel):
         quality += self.check_oxygen_allocation(
             the_peroxide, clean_model_params['oxygen_allocation'])
         quality += self.check_electricity_amount(
-            self.electricity_needed(oxygen_volume_required),
+            self.ELECTRICITY_NEEDED,
             clean_model_params['electricity_amount'])
 
+        oxygen_allocation_text = ' '.join(
+            ['Полученное при испытаниях удельное выделение кислорода:',
+             utils.percentage_frame(
+                 the_peroxide.specific_oxygen_allocation_volume)])
+        carbon_dioxide_absorption_text = ' '.join(
+            ['Полученное при испытаниях удельное поглощение углекислого газа:',
+             utils.percentage_frame(
+                 the_peroxide.specific_carbon_dioxide_absorption_volume)])
+
         interm_params = (
-            {'quality': quality},
-            {'quality': quality,
-             'real_oxygen': the_peroxide.specific_oxygen_allocation_volume,
-             'calculated_oxygen': model_params['oxygen_allocation']})
+            {'real_oxygen_allocation': oxygen_allocation_text,
+             'real_carbon_dioxide_absorption': carbon_dioxide_absorption_text},
+            {'quality': quality})
+
         self.ml.check_interm_params(self.model, *interm_params)
         return interm_params
 
@@ -147,9 +169,6 @@ class OxygenRegeneration(AbstractModel):
                    hidden_params, components):
         AbstractModel.production(
             self, input_params, interm_params, hidden_params, components)
-        output_params = {
-            'quality': hidden_params['quality'],
-            'real_oxygen': hidden_params['real_oxygen'],
-            'calculated_oxygen': hidden_params['calculated_oxygen']}
+        output_params = {'quality': hidden_params['quality']}
         self.ml.check_output_params(self.model, output_params)
         return output_params
