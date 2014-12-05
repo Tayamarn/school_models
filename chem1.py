@@ -34,8 +34,6 @@ class Peroxide(object):
 
 
 class OxygenRegeneration(AbstractModel):
-    ELECTRICITY_NEEDED = 17232
-
     def __init__(self, ml, team, logger, output):
         AbstractModel.__init__(self, ml, self.__class__.__name__,
                                team, logger, output)
@@ -50,6 +48,10 @@ class OxygenRegeneration(AbstractModel):
             key=lambda p: p.specific_oxygen_allocation_volume,
             reverse=True)]
         return PEROXIDE_TO_QUALITY[sorted_peroxide_names.index(peroxide_name)]
+
+    @staticmethod
+    def electricity_needed(oxygen_volume):
+        return 17232 * oxygen_volume
 
     @staticmethod
     def oxygen_volume(men_count, time_hours):
@@ -67,35 +69,45 @@ class OxygenRegeneration(AbstractModel):
             allocation_volume,
             DIFFERENCE_TO_QUALITY)
 
-    def check_electricity_amount(self, computed_amount, player_amount):
-        return utils.quality_by_precision(
+    def check_electricity_amount(self, computed_amount,
+                                 player_amount, water_quality):
+        precision_quality = utils.quality_by_precision(
             computed_amount, player_amount, DIFFERENCE_TO_QUALITY)
+        return precision_quality * water_quality ** 2
 
     def validate_input_params(self, input_params):
+        oxygen_volume = utils.to_float(input_params['oxygen_volume'])
+        if oxygen_volume < 0:
+            raise ModelError('Требуемый объем кислорода не может быть '
+                             'меньше 0.')
         return {
-            'n': utils.to_int(input_params['n']),
-            't': utils.to_float(input_params['t'])
+            'oxygen_volume': oxygen_volume
         }
 
     def validate_model_params(self, model_params):
         if utils.to_float(
                 model_params['carbon_dioxide_absorption']) < 0:
             raise ModelError(
-                "Рассчетное значение удельного поглощения углекислого газа"
-                " не может быть ниже 0.")
+                'Рассчетное значение удельного поглощения углекислого газа'
+                ' не может быть ниже 0.')
         if utils.to_float(
                 model_params['oxygen_allocation']) < 0:
             raise ModelError(
-                "Рассчетное значение удельного выделения кислорода"
-                " не может быть ниже 0.")
+                'Рассчетное значение удельного выделения кислорода'
+                ' не может быть ниже 0.')
         if utils.to_float(
                 model_params['electricity_amount']) < 0:
             raise ModelError(
-                "Рассчетное значение необходимой электроэнергии"
-                " не может быть ниже 0.")
+                'Рассчетное значение необходимой электроэнергии'
+                ' не может быть ниже 0.')
+        if utils.to_float(model_params['peroxide_weight']) < 0:
+            raise ModelError(
+                'Рассчетное значение массы пероксида не может быть ниже 0.')
 
         return {
             'peroxide_name': model_params['peroxide_name'],
+            'peroxide_weight': utils.to_float(
+                model_params['peroxide_weight']),
             'carbon_dioxide_absorption': utils.to_float(
                 model_params['carbon_dioxide_absorption']),
             'oxygen_allocation': utils.to_float(
@@ -103,6 +115,19 @@ class OxygenRegeneration(AbstractModel):
             'electricity_amount': utils.to_float(
                 model_params['electricity_amount'])
         }
+
+    def validate_components(self, components):
+        water_quality = utils.to_float(components['water_quality'])
+
+        # !!!IMPORTANT!!!
+        # I assume that water_quality is in [0;100] diapason.
+        # If it is in [0;1] just comment next line and change
+        # the ModelError text.
+        water_quality /= 100
+        if not (0 < water_quality < 1):
+            raise ModelError(
+                'Качество воды должно лежать в диапазоне [0;100] процентов.')
+        return {'water_quality': water_quality}
 
     def team_arguments(self, input_params):
         AbstractModel.team_arguments(self, input_params)
@@ -117,10 +142,10 @@ class OxygenRegeneration(AbstractModel):
     def pre_production(self, input_params, model_params, components):
         '''
             input_params:
-                n - number of people in the platform
-                t - platform lifetime, hours
+                oxygen_volume - oxygen volume required
             model_params:
                 peroxide_name - name of the chosen peroxide
+                peroxide_weight
                 carbon_dioxide_absorption - specific carbon dioxide absorption
                         volume for the chosen peroxide
                 oxygen_allocation - specific oxygen allocation volume for
@@ -128,12 +153,16 @@ class OxygenRegeneration(AbstractModel):
                 electricity_amount - amount of electricity needed to get the
                         required oxygen by electrolysis
             components:
+                water_ph
+                chlorine_concentration
+                water_quality
         '''
         AbstractModel.pre_production(
             self, input_params, model_params, components)
 
         clean_input_params = self.validate_input_params(input_params)
         clean_model_params = self.validate_model_params(model_params)
+        clean_components = self.validate_components(components)
 
         the_peroxide = self.chosen_peroxide(
             clean_model_params['peroxide_name'])
@@ -145,8 +174,9 @@ class OxygenRegeneration(AbstractModel):
         quality += self.check_oxygen_allocation(
             the_peroxide, clean_model_params['oxygen_allocation'])
         quality += self.check_electricity_amount(
-            self.ELECTRICITY_NEEDED,
-            clean_model_params['electricity_amount'])
+            self.electricity_needed(oxygen_volume_required),
+            clean_model_params['electricity_amount'],
+            clean_components['water_quality'])
 
         oxygen_allocation_text = ' '.join(
             ['Полученное при испытаниях удельное выделение кислорода:',
