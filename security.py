@@ -1,4 +1,3 @@
-import pickle
 import random
 
 import numpy
@@ -46,7 +45,8 @@ class Package(object):
                    self.real_points)
 
     def _crooked_cyphers(self):
-        return random_vect(-10000, 10000) / 100.
+        crooked_cyphers = random_vect(-10000, 10000) / 100.
+        return crooked_cyphers
 
 
 class Security(AbstractModel):
@@ -63,27 +63,25 @@ class Security(AbstractModel):
 
     def team_arguments_without_control(self, first_package):
         return {
-            'user_point': first_package.real_points[0],
-            'first_key': first_package.real_points[1],
-            'second_key': first_package.real_points[2],
-            'cyphered_user_point': first_package.cypher_points[0],
-            'first_cyphered_key': first_package.cypher_points[1],
-            'second_cyphered_key': first_package.cypher_points[2],
-            'u_domain': first_package.rotation_pack['u_domain'],
-            'package': pickle.dumps(first_package)}
+            'user_point': str(first_package.real_points[0]),
+            'first_key': str(first_package.real_points[1]),
+            'second_key': str(first_package.real_points[2]),
+            'cyphered_user_point': str(first_package.cypher_points[0]),
+            'first_cyphered_key': str(first_package.cypher_points[1]),
+            'second_cyphered_key': str(first_package.cypher_points[2]),
+            'u_domain': first_package.rotation_pack['u_domain']}
 
     def team_arguments_with_control(self, first_package, second_package):
         first_package_args = self.team_arguments_without_control(first_package)
 
         second_package_args = {
-            'user_point': second_package.real_points[0],
-            'first_key': second_package.real_points[1],
-            'second_key': second_package.real_points[2],
-            'cyphered_user_point': second_package.crooked_cyphers[0],
-            'first_cyphered_key': second_package.crooked_cyphers[1],
-            'second_cyphered_key': second_package.crooked_cyphers[2],
-            'u_domain': second_package.rotation_pack['u_domain'],
-            'package': pickle.dumps(second_package)}
+            'user_point': str(second_package.real_points[0]),
+            'first_key': str(second_package.real_points[1]),
+            'second_key': str(second_package.real_points[2]),
+            'cyphered_user_point': str(second_package.crooked_cyphers[0]),
+            'first_cyphered_key': str(second_package.crooked_cyphers[1]),
+            'second_cyphered_key': str(second_package.crooked_cyphers[2]),
+            'u_domain': second_package.rotation_pack['u_domain']}
 
         return {'first_package': first_package_args,
                 'second_package': second_package_args}
@@ -91,8 +89,12 @@ class Security(AbstractModel):
     def team_arguments(self, input_params):
         AbstractModel.team_arguments(self, input_params)
 
+        random.seed(self.team_specific_num)
+        rotation_packs = ROTATION_PACKS[:]
         first_rotation_pack, second_rotation_pack = random.shuffle(
-            ROTATION_PACKS)[:2]
+            rotation_packs)[:2]
+        random.seed()
+
         first_package = Package(first_rotation_pack)
 
         points = [random_vect for _ in range(2)]
@@ -126,20 +128,32 @@ class Security(AbstractModel):
         clean_model_params = {}
         for key, val in model_params.items():
             if key == 'single_solution':
-                model_params[key] = (val == 'True')
-            elif key == 'package':
-                model_params[key] = pickle.loads(val)
+                clean_model_params[key] = (val == 'True')
+            elif key in ('psi', 'u', 'phi'):
+                clean_model_params[key] = utils.to_float(val)
+            elif key == 'u_domain':
+                pass
             else:
-                model_params[key] = utils.to_float(val)
+                clean_model_params[key] = numpy.matrix(val).T
 
         player_angles = [
             clean_model_params['psi'],
             clean_model_params['u'],
             clean_model_params['phi']]
 
+        random.seed(self.team_specific_num)
+        rotation_packs = ROTATION_PACKS[:]
+        first_rotation_pack, second_rotation_pack = random.shuffle(
+            rotation_packs)[:2]
+        random.seed()
+        real_points = [
+            clean_model_params['user_point'],
+            clean_model_params['first_key'],
+            clean_model_params['second_key']]
+        first_package = Package(first_rotation_pack, real_points=real_points)
+
         max_angle_diff, work_correctness = self._max_angle_diff(
-            player_angles, clean_model_params['package'].
-            rotation_pack['rotation_angles'])
+            player_angles, first_package.rotation_pack['rotation_angles'])
 
         quality = 100 - 10 * max_angle_diff
 
@@ -173,10 +187,12 @@ class Security(AbstractModel):
             for key, val in model_params[pack_name].items():
                 if key == 'single_solution':
                     pack_dict[key] = (val == 'True')
-                elif key == 'package':
-                    pack_dict[key] = pickle.loads(val)
-                else:
+                elif key in ('psi', 'u', 'phi'):
                     pack_dict[key] = utils.to_float(val)
+                elif key == 'u_domain':
+                    pass
+                else:
+                    pack_dict[key] = numpy.matrix(val).T
 
         first_pack_answers = clean_model_params['first_package']
         second_pack_answers = clean_model_params['second_package']
@@ -196,6 +212,24 @@ class Security(AbstractModel):
                 answer['critical_error_handling'] = 'high'
             return answer
 
+        random.seed(self.team_specific_num)
+        rotation_packs = ROTATION_PACKS[:]
+        first_rotation_pack, second_rotation_pack = random.shuffle(
+            rotation_packs)[:2]
+        random.seed()
+        first_real_points = [
+            clean_model_params['first_package']['user_point'],
+            clean_model_params['first_package']['first_key'],
+            clean_model_params['first_package']['second_key']]
+        second_real_points = [
+            clean_model_params['second_package']['user_point'],
+            clean_model_params['second_package']['first_key'],
+            clean_model_params['second_package']['second_key']]
+        first_package = Package(first_rotation_pack,
+                                real_points=first_real_points)
+        second_package = Package(second_rotation_pack,
+                                 real_points=second_real_points)
+
         player_angles = [
             first_pack_answers['psi'],
             first_pack_answers['u'],
@@ -205,10 +239,8 @@ class Security(AbstractModel):
             second_pack_answers['phi']]
 
         computed_angles = (
-            model_params['first_package']['package'].
-            rotation_pack['rotation_angles'] +
-            model_params['second_package']['package'].
-            rotation_pack['rotation_angles'])
+            first_package.rotation_pack['rotation_angles'] +
+            second_package.rotation_pack['rotation_angles'])
 
         max_angle_diff, work_correctness = self._max_angle_diff(
             player_angles, computed_angles)
