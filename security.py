@@ -178,7 +178,10 @@ class Security(AbstractModel):
                 not second_pack_answers['single_solution']):
             short_model_params = model_params['first_package']
             short_model_params.pop('single_solution')
-            return self.pre_production_without_control(short_model_params)
+            answer = self.pre_production_without_control(short_model_params)
+            if answer['work_correctness'] == 'OK':
+                answer['critical_error_handling'] = 'high'
+            return answer
 
         player_angles = [
             first_pack_answers['psi'],
