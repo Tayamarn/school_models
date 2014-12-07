@@ -42,7 +42,7 @@ class OxygenRegeneration(AbstractModel):
         AbstractModel.__init__(self, ml, self.__class__.__name__,
                                team, logger, output)
 
-    def c(self, peroxides, peroxide_name):
+    def chosen_peroxide(self, peroxides, peroxide_name):
         return filter(lambda p: p.name == peroxide_name, peroxides)[0]
 
     def check_peroxide(self, peroxides, peroxide_name):
