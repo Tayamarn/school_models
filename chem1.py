@@ -1,3 +1,4 @@
+import json
 import random
 
 from abstractmodel import AbstractModel
@@ -14,9 +15,12 @@ DIFFERENCE_TO_QUALITY = [(5, 25), (10, 20), (20, 15), (25, 10), (50, 5)]
 
 
 class Peroxide(object):
-    def __init__(self, name, q1, q2, q3):
+    def __init__(self, name, q1, q2, q3, impurity_factor=None):
         self.name = name
-        self.impurity_factor = self._random_impurity_factor()
+        if impurity_factor is None:
+            self.impurity_factor = self._random_impurity_factor()
+        else:
+            self.impurity_factor = impurity_factor
         self.specific_carbon_dioxide_absorption_volume = (
             self._specific_carbon_dioxide_absorption_volume(q1, q2))
         self.specific_oxygen_allocation_volume = (
@@ -37,14 +41,13 @@ class OxygenRegeneration(AbstractModel):
     def __init__(self, ml, team, logger, output):
         AbstractModel.__init__(self, ml, self.__class__.__name__,
                                team, logger, output)
-        self.peroxides = [Peroxide(**p) for p in PEROXIDES]
 
-    def chosen_peroxide(self, peroxide_name):
-        return filter(lambda p: p.name == peroxide_name, self.peroxides)[0]
+    def c(self, peroxides, peroxide_name):
+        return filter(lambda p: p.name == peroxide_name, peroxides)[0]
 
-    def check_peroxide(self, peroxide_name):
+    def check_peroxide(self, peroxides, peroxide_name):
         sorted_peroxide_names = [p.name for p in sorted(
-            self.peroxides,
+            peroxides,
             key=lambda p: p.specific_oxygen_allocation_volume,
             reverse=True)]
         return PEROXIDE_TO_QUALITY[sorted_peroxide_names.index(peroxide_name)]
@@ -103,7 +106,6 @@ class OxygenRegeneration(AbstractModel):
         if utils.to_float(model_params['peroxide_weight']) < 0:
             raise ModelError(
                 'Рассчетное значение массы пероксида не может быть ниже 0.')
-
         return {
             'peroxide_name': model_params['peroxide_name'],
             'peroxide_weight': utils.to_float(
@@ -113,7 +115,11 @@ class OxygenRegeneration(AbstractModel):
             'oxygen_allocation': utils.to_float(
                 model_params['oxygen_allocation']),
             'electricity_amount': utils.to_float(
-                model_params['electricity_amount'])
+                model_params['electricity_amount']),
+            'peroxide_impurities': json.loads(
+                model_params['peroxide_impurities'].replace("'", '"')),
+            'oxygen_volume_required': utils.to_float(
+                model_params['oxygen_volume_required'])
         }
 
     def validate_components(self, components):
@@ -131,9 +137,12 @@ class OxygenRegeneration(AbstractModel):
 
     def team_arguments(self, input_params):
         AbstractModel.team_arguments(self, input_params)
+
+        peroxides = [Peroxide(**p) for p in PEROXIDES]
+
         clean_input_params = self.validate_input_params(input_params)
         peroxide_impurities = {p.name: p.impurity_factor
-                               for p in self.peroxides}
+                               for p in peroxides}
         oxygen_volume_required = self.oxygen_volume(
             clean_input_params['n'], clean_input_params['t'])
         return {'peroxide_impurities': peroxide_impurities,
@@ -164,11 +173,16 @@ class OxygenRegeneration(AbstractModel):
         clean_model_params = self.validate_model_params(model_params)
         clean_components = self.validate_components(components)
 
+        peroxides = [
+            Peroxide(clean_model_params['peroxide_impurities'][p.name], **p)
+            for p in PEROXIDES]
+
         the_peroxide = self.chosen_peroxide(
-            clean_model_params['peroxide_name'])
+            peroxides, clean_model_params['peroxide_name'])
         oxygen_volume_required = self.oxygen_volume(  # noqa
             clean_input_params['n'], clean_input_params['t'])
-        quality = self.check_peroxide(clean_model_params['peroxide_name'])
+        quality = self.check_peroxide(
+            peroxides, clean_model_params['peroxide_name'])
         quality += self.check_carbon_dioxide_absorption(
             the_peroxide, clean_model_params['carbon_dioxide_absorption'])
         quality += self.check_oxygen_allocation(
