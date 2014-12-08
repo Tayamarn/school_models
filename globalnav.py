@@ -106,7 +106,7 @@ class GlobalNav(AbstractModel):
 
         coverage = (
             clean_input_params['orbital_inclination'] +
-            math.acos(6400. / orbit_radius))
+            math.degrees(math.acos(6400. / orbit_radius)))
         if coverage < 90:
             coverage_text = '[0;{}]'.format(coverage)
         else:
