@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 """
 Utilities for my models. You can use them too!
 
@@ -6,14 +7,6 @@ Comments are welcome at max@goldenforests.ru
 import random
 
 from errors import ModelError
-
-
-# class ModelError(Exception):
-#     def __init__(self, value):
-#         self.value = value
-
-#     def __str__(self):
-#         return repr(self.value)
 
 
 def percentage_difference(original, copy):

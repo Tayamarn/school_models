@@ -1,3 +1,5 @@
+# -*- coding: UTF-8 -*-
+
 import random
 
 import numpy
@@ -18,10 +20,11 @@ ROTATIONS = (
     (225, 120, 30), (120, 300, 45))
 U_DOMAINS = ('[90;180]', '[270;360]', '[0;90]', '[90;180]', '[270;360]')
 ROTATION_PACKS = zip(S_MATRIXES, ROTATIONS, U_DOMAINS)
-ROTATION_PACKS = {
-    's_matrix': ROTATION_PACKS[0],
-    'rotation_angles': ROTATION_PACKS[1],
-    'u_domain': ROTATION_PACKS[2]}
+ROTATION_PACKS = [{
+    's_matrix': rp[0],
+    'rotation_angles': rp[1],
+    'u_domain': rp[2]}
+    for rp in ROTATION_PACKS]
 
 
 def random_vect(left=-100, right=100):
@@ -34,7 +37,7 @@ class Package(object):
         self.rotation_pack = rotation_pack
 
         if real_points is None:
-            self.real_points = [random_vect for _ in range(3)]
+            self.real_points = [random_vect() for _ in range(3)]
         else:
             self.real_points = real_points
         self.cypher_points = self._cypher_points()
@@ -69,7 +72,9 @@ class Security(AbstractModel):
             'cyphered_user_point': str(first_package.cypher_points[0]),
             'first_cyphered_key': str(first_package.cypher_points[1]),
             'second_cyphered_key': str(first_package.cypher_points[2]),
-            'u_domain': first_package.rotation_pack['u_domain']}
+            'u_domain': first_package.rotation_pack['u_domain'],
+            # 'rotation_agnles': first_package.rotation_pack['rotation_angles'],  # noqa
+        }
 
     def team_arguments_with_control(self, first_package, second_package):
         first_package_args = self.team_arguments_without_control(first_package)
@@ -91,14 +96,14 @@ class Security(AbstractModel):
 
         random.seed(self.team_specific_num)
         rotation_packs = ROTATION_PACKS[:]
-        first_rotation_pack, second_rotation_pack = random.shuffle(
-            rotation_packs)[:2]
+        random.shuffle(rotation_packs)
+        first_rotation_pack, second_rotation_pack = rotation_packs[:2]
         random.seed()
 
         first_package = Package(first_rotation_pack)
 
-        points = [random_vect for _ in range(2)]
-        points.append(points[random.randint(1, 2)] * random.randint(2, 5))
+        points = [random_vect() for _ in range(2)]
+        points.append(points[random.randint(0, 1)] * random.randint(2, 5))
         second_package = Package(
             second_rotation_pack, real_points=points)
 
