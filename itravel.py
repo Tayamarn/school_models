@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 import json
 import math
 import random
@@ -126,12 +127,20 @@ class ITravel(AbstractModel):
         matrix = random.choice(MATRIXES[dim])
 
         return {
-            'base_station': str(base_station),
-            'point_of_interest': str(point_of_interest),
-            'p1': str(p1),
-            'p2': str(p2),
-            'center_shift': str(center_shift),
-            'matrix': str(matrix)}
+            'base_station': (base_station),
+            'point_of_interest': (point_of_interest),
+            'p1': (p1),
+            'p2': (p2),
+            'center_shift': (center_shift),
+            'matrix': (matrix)}
+
+        # return {
+        #     'base_station': str(base_station),
+        #     'point_of_interest': str(point_of_interest),
+        #     'p1': str(p1),
+        #     'p2': str(p2),
+        #     'center_shift': str(center_shift),
+        #     'matrix': str(matrix)}
 
     def compute_2d(self, model_params):
         navigator_coords = [
@@ -202,6 +211,11 @@ class ITravel(AbstractModel):
         alpha_x = math.degrees(alpha_x)
         beta_y = math.degrees(beta_y)
         gamma_z = math.degrees(gamma_z)
+
+        # print(alpha_x)
+        # print(beta_y)
+        # print(gamma_z)
+        # print(vector_length)
 
         return vector_length
 
