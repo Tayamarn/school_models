@@ -116,7 +116,7 @@ class Security(AbstractModel):
     def _max_angle_diff(self, first_angles, second_angles):
         max_angle_diff = max(map(
             lambda x: abs(x[0] - x[1]), zip(first_angles, second_angles)))
-        if max_angle_diff < 5:
+        if max_angle_diff < 11:
             work_correctness = 'OK'
         else:
             work_correctness = 'Not enough'
@@ -252,7 +252,7 @@ class Security(AbstractModel):
 
         quality = 100 - 10 * max_angle_diff
 
-        if max_angle_diff < 5:
+        if max_angle_diff < 11:
             critical_error_handling = 'high'
             quality += 15
         else:
@@ -266,7 +266,7 @@ class Security(AbstractModel):
         open_interm_params = {
             'critical_error_handling': critical_error_handling,
             'work_correctness': work_correctness}
-        if max_angle_diff < 5:
+        if max_angle_diff < 11:
             open_interm_params['super-bonus'] = True
 
         return (open_interm_params, {'quality': quality})
